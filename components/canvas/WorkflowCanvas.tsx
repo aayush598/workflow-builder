@@ -26,6 +26,13 @@ import LeftSidebar from '@/components/sidebars/left/LeftSidebar';
 import RightSidebar from '@/components/sidebars/right/RightSidebar';
 import BottomToolbar from '@/components/toolbar/BottomToolbar';
 
+import TextNode from '@/components/nodes/text/TextNode';
+import UploadImageNode from '@/components/nodes/upload-image/UploadImageNode';
+import UploadVideoNode from '@/components/nodes/upload-video/UploadVideoNode';
+import CropImageNode from '@/components/nodes/crop-image/CropImageNode';
+import ExtractFrameNode from '@/components/nodes/extract-frame/ExtractFrameNode';
+import LLMNode from '@/components/nodes/llm/LLMNode';
+
 import CanvasBackground from './CanvasBackground';
 import CanvasMiniMap from './CanvasMiniMap';
 import CanvasControls from './CanvasControls';
@@ -44,6 +51,19 @@ const defaultEdgeOptions = {
   markerEnd: {
     type: MarkerType.ArrowClosed,
   },
+};
+
+/* ------------------------------------------------------------------ */
+/* Node Types */
+/* ------------------------------------------------------------------ */
+
+const nodeTypes = {
+  text: TextNode,
+  'upload-image': UploadImageNode,
+  'upload-video': UploadVideoNode,
+  'crop-image': CropImageNode,
+  'extract-frame': ExtractFrameNode,
+  llm: LLMNode,
 };
 
 /* ------------------------------------------------------------------ */
@@ -80,28 +100,29 @@ export default function WorkflowCanvas() {
       <Header />
 
       <div
-  className="absolute left-16 right-[300px] top-16 bottom-0"
-  onDrop={onDrop}
-  onDragOver={onDragOver}
->
-  <ReactFlow
-    nodes={nodes}
-    edges={edges}
-    onNodesChange={onNodesChange}
-    onEdgesChange={onEdgesChange}
-    onConnect={handleConnect}
-    defaultEdgeOptions={defaultEdgeOptions}
-    fitView
-    className="bg-[#0A0A0A]"
-    proOptions={{ hideAttribution: true }}
-  >
-    <CanvasBackground />
-    <CanvasMiniMap />
-    <CanvasControls />
-  </ReactFlow>
+        className="absolute left-16 right-[300px] top-16 bottom-0"
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+      >
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={handleConnect}
+          nodeTypes={nodeTypes}
+          defaultEdgeOptions={defaultEdgeOptions}
+          fitView
+          className="bg-[#0A0A0A]"
+          proOptions={{ hideAttribution: true }}
+        >
+          <CanvasBackground />
+          <CanvasMiniMap />
+          <CanvasControls />
+        </ReactFlow>
 
-  <BottomToolbar />
-</div>
+        <BottomToolbar />
+      </div>
 
     </div>
   );

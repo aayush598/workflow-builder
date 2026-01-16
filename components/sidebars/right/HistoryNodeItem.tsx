@@ -14,21 +14,21 @@
  */
 
 import clsx from 'clsx';
-import type { WorkflowRunNode } from '@/store/history.store';
+import type { HistoryNodeResult } from '@/store/history.store';
 
 /* ------------------------------------------------------------------ */
 /* Props */
 /* ------------------------------------------------------------------ */
 
 interface HistoryNodeItemProps {
-  node: WorkflowRunNode;
+  node: HistoryNodeResult;
 }
 
 /* ------------------------------------------------------------------ */
 /* Helpers */
 /* ------------------------------------------------------------------ */
 
-function statusColor(status: WorkflowRunNode['status']) {
+function statusColor(status: HistoryNodeResult['status']) {
   switch (status) {
     case 'success':
       return 'text-green-400';
@@ -41,7 +41,7 @@ function statusColor(status: WorkflowRunNode['status']) {
   }
 }
 
-function statusSymbol(status: WorkflowRunNode['status']) {
+function statusSymbol(status: HistoryNodeResult['status']) {
   switch (status) {
     case 'success':
       return '✓';
@@ -68,7 +68,7 @@ export default function HistoryNodeItem({ node }: HistoryNodeItemProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-white truncate">
-          {node.name}
+          {node.label || node.nodeType}
         </span>
 
         <span
@@ -82,21 +82,21 @@ export default function HistoryNodeItem({ node }: HistoryNodeItemProps) {
       </div>
 
       {/* Meta */}
-      {node.duration && (
+      {node.durationMs !== undefined && (
         <div className="mt-0.5 text-[10px] text-white/40">
-          {node.duration}
+          {node.durationMs}ms
         </div>
       )}
 
       {/* Output */}
-      {node.output && (
+      {!!node.output && (
         <div className="mt-1 text-[10px] text-white/60 line-clamp-2">
           Output: {String(node.output)}
         </div>
       )}
 
       {/* Error */}
-      {node.error && (
+      {!!node.error && (
         <div className="mt-1 text-[10px] text-red-400 line-clamp-2">
           Error: {String(node.error)}
         </div>

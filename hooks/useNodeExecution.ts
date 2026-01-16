@@ -40,7 +40,7 @@ export function useNodeExecution(nodeId: string) {
 
       recordNode(runId, {
         nodeId,
-        nodeType: node.type,
+        nodeType: node.type ?? 'default',
         status: 'success',
         durationMs: Date.now() - startedAt,
         output,
@@ -53,7 +53,7 @@ export function useNodeExecution(nodeId: string) {
 
       recordNode(runId, {
         nodeId,
-        nodeType: node.type,
+        nodeType: node.type ?? 'default',
         status: 'failed',
         error: err instanceof Error ? err.message : String(err),
       });
@@ -62,15 +62,15 @@ export function useNodeExecution(nodeId: string) {
       throw err;
     }
   }, [
-  nodeId,
-  nodes,
-  edges,
-  resetAll,
-  startNode,
-  succeedNode,
-  failNode,
-  startRun,
-  recordNode,
-  finishRun,
-]);
+    nodeId,
+    nodes,
+    edges,
+    resetAll,
+    startNode,
+    succeedNode,
+    failNode,
+    startRun,
+    recordNode,
+    finishRun,
+  ]);
 }

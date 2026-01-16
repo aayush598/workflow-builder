@@ -85,7 +85,7 @@ export default function HistoryRunItem({ run }: HistoryRunItemProps) {
           </div>
 
           <div className="mt-1 text-[10px] text-white/50">
-            {formatDistanceToNow(new Date(run.timestamp), {
+            {formatDistanceToNow(new Date(run.startedAt), {
               addSuffix: true,
             })}
           </div>
@@ -95,13 +95,13 @@ export default function HistoryRunItem({ run }: HistoryRunItemProps) {
               {run.scope === 'full'
                 ? 'Full Workflow'
                 : run.scope === 'single'
-                ? 'Single Node'
-                : 'Partial'}
+                  ? 'Single Node'
+                  : 'Partial'}
             </span>
-            {run.duration && (
+            {run.finishedAt && (
               <>
                 <span>•</span>
-                <span>{run.duration}</span>
+                <span>{run.finishedAt - run.startedAt}ms</span>
               </>
             )}
           </div>

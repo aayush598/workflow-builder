@@ -154,9 +154,7 @@ export interface ExtractFrameRequest {
 /* Helpers */
 /* ------------------------------------------------------------------ */
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// sleep is already defined above
 
 function randomFail(probability = 0.05) {
   if (Math.random() < probability) {

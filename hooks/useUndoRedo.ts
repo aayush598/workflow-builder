@@ -25,20 +25,19 @@ import type { DomainNode } from '@/domain/nodes/node-factory';
 /* ------------------------------------------------------------------ */
 
 interface WorkflowSnapshot {
-  nodes: DomainNode[];
+  nodes: any[];
   edges: any[];
 }
 
 /* ------------------------------------------------------------------ */
 /* Hook */
- /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
 
 export function useUndoRedo() {
   const {
     nodes,
     edges,
-    setNodes,
-    setEdges,
+    setGraph,
   } = useWorkflowStore();
 
   const undoStack = useRef<WorkflowSnapshot[]>([]);
@@ -54,7 +53,8 @@ export function useUndoRedo() {
 
     undoStack.current.push({
       nodes: structuredClone(nodes),
-      edges: structuredClone(edges),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      edges: structuredClone(edges) as any[],
     });
 
     // Once a new action happens, redo history is invalid
@@ -71,14 +71,14 @@ export function useUndoRedo() {
 
     redoStack.current.push({
       nodes: structuredClone(nodes),
-      edges: structuredClone(edges),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      edges: structuredClone(edges) as any[],
     });
 
     isRestoring.current = true;
-    setNodes(last.nodes);
-    setEdges(last.edges);
+    setGraph(last.nodes as any[], last.edges);
     isRestoring.current = false;
-  }, [nodes, edges, setNodes, setEdges]);
+  }, [nodes, edges, setGraph]);
 
   /* ------------------------------------------------------------------ */
   /* Redo */
@@ -90,14 +90,14 @@ export function useUndoRedo() {
 
     undoStack.current.push({
       nodes: structuredClone(nodes),
-      edges: structuredClone(edges),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      edges: structuredClone(edges) as any[],
     });
 
     isRestoring.current = true;
-    setNodes(next.nodes);
-    setEdges(next.edges);
+    setGraph(next.nodes as any[], next.edges);
     isRestoring.current = false;
-  }, [nodes, edges, setNodes, setEdges]);
+  }, [nodes, edges, setGraph]);
 
   /* ------------------------------------------------------------------ */
   /* Auto snapshot on graph mutation */
