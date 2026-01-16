@@ -1,0 +1,94 @@
+'use client';
+
+/**
+ * DraggableNodeItem
+ *
+ * Responsibilities:
+ * - Render a single node entry in the catalog
+ * - Attach drag metadata (node type)
+ * - Delegate drag behavior to hook
+ *
+ * IMPORTANT:
+ * - No store access
+ * - No React Flow imports
+ * - No node creation logic
+ */
+
+import type { NodeTypeDefinition } from '@/domain/nodes/node-types';
+import { useDragNode } from '@/hooks/useDragNode';
+import { cn } from '@/lib/utils';
+import {
+  Type,
+  Image,
+  Video,
+  Crop,
+  Film,
+  Sparkles,
+  Box,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+/* ------------------------------------------------------------------ */
+/* Types */
+/* ------------------------------------------------------------------ */
+
+export interface DraggableNodeItemProps {
+  node: NodeTypeDefinition;
+}
+
+export const ICON_REGISTRY: Record<string, LucideIcon> = {
+  Type,
+  Image,
+  Video,
+  Crop,
+  Film,
+  Sparkles,
+  Box,
+};
+
+/* ------------------------------------------------------------------ */
+/* Component */
+/* ------------------------------------------------------------------ */
+
+export default function DraggableNodeItem({
+  node,
+}: DraggableNodeItemProps) {
+  const { onDragStart } = useDragNode();
+
+  const Icon: LucideIcon =
+    ICON_REGISTRY[node.icon] ?? ICON_REGISTRY.Box;
+
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, node.type)}
+      className={cn(
+        'group flex cursor-grab items-center gap-3 rounded-lg border px-3 py-2 text-left transition',
+        'border-white/10 bg-[#0A0A0A] hover:border-white/30 hover:bg-white/5',
+        'active:cursor-grabbing'
+      )}
+    >
+      {/* Icon */}
+      <div
+        className="flex h-8 w-8 items-center justify-center rounded-md"
+        style={{ backgroundColor: `${node.color}20` }}
+      >
+        <Icon
+          className="h-4 w-4"
+          style={{ color: node.color }}
+        />
+      </div>
+
+      {/* Label */}
+      <div className="flex flex-col overflow-hidden">
+        <span className="text-sm font-medium text-white">
+          {node.label}
+        </span>
+        <span className="text-xs text-white/40 line-clamp-1">
+          {node.description}
+        </span>
+      </div>
+    </div>
+  );
+}

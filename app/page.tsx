@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactFlowProvider } from '@xyflow/react';
-import WorkflowCanvas from '@/components/WorkflowCanvas';
+import WorkflowCanvas from '@/components/canvas/WorkflowCanvas';
 
 export default function Home() {
   return (

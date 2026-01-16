@@ -1,0 +1,35 @@
+/**
+ * Node execution animations
+ *
+ * Applied via `.node-running` class
+ */
+
+.node-running {
+  position: relative;
+}
+
+.node-running::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(
+    120deg,
+    rgba(59, 130, 246, 0.6),
+    rgba(217, 70, 239, 0.6),
+    rgba(45, 212, 191, 0.6)
+  );
+  filter: blur(12px);
+  opacity: 0.8;
+  animation: node-glow 2s linear infinite;
+  z-index: -1;
+}
+
+@keyframes node-glow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
