@@ -52,11 +52,6 @@ export default function TextNode({
 
   return (
     <>
-      <NodeHandles
-        nodeType={'text' satisfies NodeTypeId}
-        accentColor={definition.color}
-      />
-
       <BaseNode
         title={nodeData.label ?? definition.label}
         accentColor={definition.color}
@@ -79,6 +74,11 @@ export default function TextNode({
           className="min-h-[100px] resize-none bg-[#0A0A0A] text-xs text-white border-white/10 focus:border-[#3B82F6]"
         />
       </BaseNode>
+
+      <NodeHandles
+        nodeType={'text' satisfies NodeTypeId}
+        accentColor={definition.color}
+      />
     </>
   );
 }

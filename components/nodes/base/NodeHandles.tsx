@@ -58,6 +58,7 @@ function renderHandles(
           border: '2px solid white',
           width: 12,
           height: 12,
+          zIndex: 50,
         }}
         className="!rounded-full"
       />

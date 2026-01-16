@@ -113,19 +113,25 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
   onConnect: (connection) => {
     const { nodes, edges } = get();
 
+    console.log('🔗 onConnect triggered:', connection);
+
     if (
       !connection.source ||
       !connection.target ||
       !connection.sourceHandle ||
       !connection.targetHandle
     ) {
+      console.warn('❌ Missing connection handles/ids');
       return;
     }
 
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
 
-    if (!sourceNode || !targetNode) return;
+    if (!sourceNode || !targetNode) {
+      console.warn('❌ Source or Target node not found', { sourceNode, targetNode });
+      return;
+    }
 
     const sourcePort = getNodePort(
       sourceNode.type as NodeTypeId,
@@ -139,7 +145,12 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
       'input'
     );
 
-    if (!sourcePort || !targetPort) return;
+    if (!sourcePort || !targetPort) {
+      console.warn('❌ Source or Target port definition not found', { sourcePort, targetPort });
+      return;
+    }
+
+    console.log('✅ Ports found:', { source: sourcePort, target: targetPort });
 
     if (
       !isCompatibleConnection(
@@ -147,6 +158,7 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
         targetPort.dataType
       )
     ) {
+      console.warn('❌ Incompatible types:', { from: sourcePort.dataType, to: targetPort.dataType });
       return;
     }
 
@@ -162,7 +174,10 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
           e.targetHandle === connection.targetHandle
       );
 
-      if (alreadyConnected) return;
+      if (alreadyConnected) {
+        console.warn('❌ Port already connected (single connection allowed)');
+        return;
+      }
     }
 
     const newEdge: Edge = {
@@ -172,6 +187,8 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
       target: connection.target,
       targetHandle: connection.targetHandle,
     };
+
+    console.log('✨ Creating edge:', newEdge);
 
     const domainNodes = nodes.map(toDomainNode);
     const domainEdges: WorkflowEdge[] = [
@@ -191,7 +208,8 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
       },
     ];
 
-    if (!validateWorkflowGraph(domainNodes, domainEdges).valid) {
+    if (!validateWorkflowGraph(domainNodes, domainEdges, { checkRequired: false }).valid) {
+      console.warn('❌ Cycle detected or graph invalid');
       return;
     }
 

@@ -199,7 +199,15 @@ export function isCompatibleConnection(
   sourceType: PortDataType,
   targetType: PortDataType
 ): boolean {
-  return sourceType === targetType;
+  // Strict match
+  if (sourceType === targetType) return true;
+
+  // Allow Text -> Image/Video (assuming URL)
+  if (sourceType === 'text' && (targetType === 'image' || targetType === 'video')) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

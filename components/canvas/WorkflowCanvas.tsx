@@ -47,7 +47,7 @@ import { useDragNode } from '@/hooks/useDragNode';
 
 const defaultEdgeOptions = {
   animated: true,
-  style: { strokeWidth: 2 },
+  style: { strokeWidth: 2, stroke: '#fff' },
   markerEnd: {
     type: MarkerType.ArrowClosed,
   },

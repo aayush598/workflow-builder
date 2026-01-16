@@ -61,9 +61,10 @@ export interface DagValidationResult {
  */
 export function validateWorkflowGraph(
   nodes: DomainNode[],
-  edges: WorkflowEdge[]
+  edges: WorkflowEdge[],
+  options: { checkRequired?: boolean } = { checkRequired: true }
 ): DagValidationResult {
-  return validateDag({ nodes, edges });
+  return validateDag({ nodes, edges }, options);
 }
 
 
@@ -75,7 +76,11 @@ export function validateWorkflowGraph(
  * Validate a workflow graph.
  * This function NEVER throws.
  */
-export function validateDag(graph: WorkflowGraph): DagValidationResult {
+export function validateDag(
+  graph: WorkflowGraph,
+  options: { checkRequired?: boolean } = { checkRequired: true }
+): DagValidationResult {
+  const { checkRequired = true } = options;
   const errors: DagValidationError[] = [];
 
   const nodeMap = buildNodeMap(graph.nodes);
@@ -153,20 +158,22 @@ export function validateDag(graph: WorkflowGraph): DagValidationResult {
 
   /* ---------------- Required Inputs ---------------- */
 
-  for (const node of graph.nodes) {
-    const requiredPorts = getRequiredInputPorts(node.type);
-    const incoming = getIncomingEdges(node.id, graph.edges);
+  if (checkRequired) {
+    for (const node of graph.nodes) {
+      const requiredPorts = getRequiredInputPorts(node.type);
+      const incoming = getIncomingEdges(node.id, graph.edges);
 
-    for (const port of requiredPorts) {
-      const connected = incoming.some(
-        (e) => e.targetHandle === port.id
-      );
+      for (const port of requiredPorts) {
+        const connected = incoming.some(
+          (e) => e.targetHandle === port.id
+        );
 
-      if (!connected) {
-        errors.push({
-          nodeId: node.id,
-          message: `Required input "${port.label}" is not connected`,
-        });
+        if (!connected) {
+          errors.push({
+            nodeId: node.id,
+            message: `Required input "${port.label}" is not connected`,
+          });
+        }
       }
     }
   }

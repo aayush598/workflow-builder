@@ -90,11 +90,6 @@ export default function LLMNode({
 
   return (
     <>
-      <NodeHandles
-        nodeType={'llm' satisfies NodeTypeId}
-        accentColor={definition.color}
-      />
-
       <BaseNode
         title={nodeData.label ?? definition.label}
         accentColor={definition.color}
@@ -165,6 +160,11 @@ export default function LLMNode({
           )}
         </div>
       </BaseNode>
+
+      <NodeHandles
+        nodeType={'llm' satisfies NodeTypeId}
+        accentColor={definition.color}
+      />
     </>
   );
 }

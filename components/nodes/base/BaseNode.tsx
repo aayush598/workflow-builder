@@ -107,14 +107,6 @@ export default function BaseNode({
           {footer}
         </div>
       )}
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Accent Strip (subtle, Weavy-style) */}
-      {/* ------------------------------------------------------------------ */}
-      <div
-        className="absolute left-0 top-0 h-full w-[3px] rounded-l-xl"
-        style={{ backgroundColor: accentColor }}
-      />
     </div>
   );
 }
