@@ -1,25 +1,26 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-declare global {
-    // eslint-disable-next-line no-var
-    var __prisma: PrismaClient | undefined;
-}
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
 
-/**
- * Prisma Client Singleton
- *
- * - Prevents exhausting connections in dev (Next.js hot reload)
- * - Creates a fresh client in prod (serverless-safe)
- */
-export const prisma: PrismaClient =
-    global.__prisma ??
-    new PrismaClient({
-        log:
-            process.env.NODE_ENV === "development"
-                ? ["query", "warn", "error"]
-                : ["error"],
-    });
+const connectionString = process.env.DATABASE_URL!;
 
-if (process.env.NODE_ENV !== "production") {
-    global.__prisma = prisma;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter,
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['query', 'warn', 'error']
+        : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
 }
