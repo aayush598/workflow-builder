@@ -7,7 +7,7 @@ type Handler = (
 
 export function withAuth(handler: Handler): Handler {
   return async (req, context) => {
-    requireAuth();
+    await requireAuth();
     return handler(req, context);
   };
 }

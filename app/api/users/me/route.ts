@@ -9,7 +9,7 @@ import { userRepository } from '@/database/repositories/user.repository';
 export const GET = withErrorHandler(
   withAuth(async () => {
     // 1. Auth context (Clerk userId)
-    const { userId } = await requireAuth();
+    const { clerkId } = await requireAuth();
 
     // 2. Fetch Clerk user (email, etc.)
     const clerkUser = await currentUser();
@@ -20,7 +20,7 @@ export const GET = withErrorHandler(
 
     // 3. Upsert user in DB (lazy provisioning)
     const user = await userRepository.upsertByClerkId(prisma, {
-      clerkId: userId,
+      clerkId,
       email,
     });
 

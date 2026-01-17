@@ -44,6 +44,23 @@ export class WorkflowRepository {
             data: { isArchived: true },
         });
     }
+    async update(
+        db: DbClient,
+        id: string,
+        data: Prisma.WorkflowUpdateInput
+    ) {
+        return db.workflow.update({
+            where: { id },
+            data,
+        });
+    }
+
+    async delete(db: DbClient, id: string) {
+        return db.workflow.delete({
+            where: { id },
+        });
+    }
 }
+
 
 export const workflowRepository = new WorkflowRepository();

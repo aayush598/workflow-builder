@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { withTransaction } from "@/lib/db";
+import { NotFoundError } from "@/api/errors/not-found.error";
 import { workflowRepository } from "../repositories/workflow.repository";
 import { workflowVersionRepository } from "../repositories/workflow-version.repository";
 import { nodeSnapshotRepository } from "../repositories/node-snapshot.repository";
@@ -15,6 +16,39 @@ interface CreateWorkflowInput {
 }
 
 export class WorkflowService {
+    async listByUserId(userId: string) {
+        return workflowRepository.listByUser(prisma, userId);
+    }
+
+    async create(input: { userId: string; name: string; description?: string }) {
+        return workflowRepository.create(prisma, input);
+    }
+
+    async getByIdForUser(id: string, userId: string) {
+        const workflow = await workflowRepository.findById(prisma, id);
+
+        if (!workflow || workflow.userId !== userId) {
+            throw new NotFoundError("Workflow not found");
+        }
+
+        return workflow;
+    }
+
+    async updateForUser(
+        id: string,
+        userId: string,
+        data: { name?: string; description?: string; isArchived?: boolean }
+    ) {
+        await this.getByIdForUser(id, userId);
+
+        return workflowRepository.update(prisma, id, data);
+    }
+
+    async deleteForUser(id: string, userId: string) {
+        await this.getByIdForUser(id, userId);
+
+        return workflowRepository.delete(prisma, id);
+    }
     async createWorkflow(input: CreateWorkflowInput) {
         return withTransaction(async (tx) => {
             const workflow = await workflowRepository.create(tx, {
