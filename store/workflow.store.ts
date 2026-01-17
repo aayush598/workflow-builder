@@ -35,14 +35,20 @@ import {
   getNodePort,
   allowsMultipleConnections,
 } from '@/domain/nodes/node-ports';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
 
+export type EditorMode = 'select' | 'pan';
+
 export interface WorkflowState {
   nodes: Node[];
   edges: Edge[];
+
+  editorMode: EditorMode;
+  setEditorMode: (mode: EditorMode) => void;
 
   /* React Flow adapters */
   onNodesChange: (changes: NodeChange[]) => void;
@@ -54,6 +60,8 @@ export interface WorkflowState {
   duplicateNode: (nodeId: string) => void;
   removeNode: (nodeId: string) => void;
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
+
+  beforeGraphChange?: () => void;
 
   /* Graph actions */
   setGraph: (nodes: Node[], edges: Edge[]) => void;
@@ -96,14 +104,21 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
   nodes: [],
   edges: [],
 
+  editorMode: 'select',
+  setEditorMode: (mode) => set({ editorMode: mode }),
+
   /* -------------------------------------------------------------- */
   /* React Flow adapters */
   /* -------------------------------------------------------------- */
 
   onNodesChange: (changes) =>
-    set((state) => ({
-      nodes: applyNodeChanges(changes, state.nodes),
-    })),
+    set((state) => {
+      state.beforeGraphChange?.();
+      return {
+        nodes: applyNodeChanges(changes, state.nodes),
+      };
+    }),
+
 
   onEdgesChange: (changes) =>
     set((state) => ({

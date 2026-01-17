@@ -40,6 +40,8 @@ import CanvasControls from './CanvasControls';
 import useWorkflowStore from '@/store/workflow.store';
 import { useDragNode } from '@/hooks/useDragNode';
 
+import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { useEffect } from 'react';
 
 /* ------------------------------------------------------------------ */
 /* Edge defaults */
@@ -77,9 +79,11 @@ export default function WorkflowCanvas() {
     onNodesChange,
     onEdgesChange,
     onConnect,
+    editorMode,
   } = useWorkflowStore();
-  const { onDrop, onDragOver } = useDragNode();
 
+  const { onDrop, onDragOver } = useDragNode();
+  const { pushSnapshot } = useUndoRedo();
 
   /**
    * Connection validation wrapper
@@ -91,6 +95,12 @@ export default function WorkflowCanvas() {
     },
     [onConnect]
   );
+
+  useEffect(() => {
+    useWorkflowStore.setState({
+      beforeGraphChange: pushSnapshot,
+    });
+  }, [pushSnapshot]);
 
   return (
     <div className="h-screen w-screen bg-[#0A0A0A] overflow-hidden">
@@ -112,6 +122,10 @@ export default function WorkflowCanvas() {
           onConnect={handleConnect}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
+          panOnDrag={editorMode === 'pan'}
+          selectionOnDrag={editorMode === 'select'}
+          nodesDraggable={editorMode === 'select'}
+          nodesConnectable={editorMode === 'select'}
           fitView
           className="bg-[#0A0A0A]"
           proOptions={{ hideAttribution: true }}

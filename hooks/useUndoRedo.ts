@@ -8,115 +8,136 @@
  *
  * DESIGN:
  * - Snapshot-based (simple, reliable)
- * - No command pattern yet (can be added later)
+ * - Uses internal Zustand store for singleton history state
  *
  * IMPORTANT:
- * - No React Flow imports
+ * - No React Flow imports in API (handled internally)
  * - No DOM logic
  */
 
-import { useCallback, useEffect, useRef } from 'react';
-
+import { create } from 'zustand';
 import useWorkflowStore from '@/store/workflow.store';
-import type { DomainNode } from '@/domain/nodes/node-factory';
+import type { Node as RFNode, Edge } from '@xyflow/react';
 
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
 
 interface WorkflowSnapshot {
-  nodes: any[];
-  edges: any[];
+  nodes: RFNode[];
+  edges: Edge[];
+}
+
+interface HistoryState {
+  undoStack: WorkflowSnapshot[];
+  redoStack: WorkflowSnapshot[];
+  isRestoring: boolean;
+
+  /* Actions */
+  pushSnapshot: () => void;
+  undo: () => void;
+  redo: () => void;
+  clear: () => void;
 }
 
 /* ------------------------------------------------------------------ */
-/* Hook */
+/* Internal Store */
+/* ------------------------------------------------------------------ */
+
+const useHistoryStore = create<HistoryState>((set, get) => ({
+  undoStack: [],
+  redoStack: [],
+  isRestoring: false,
+
+  pushSnapshot: () => {
+    const { isRestoring, undoStack } = get();
+    // Don't save snapshot if we are currently undoing/redoing
+    if (isRestoring) return;
+
+    // Grab *current* state from the workflow store
+    const { nodes, edges } = useWorkflowStore.getState();
+
+    set({
+      undoStack: [...undoStack, {
+        nodes: structuredClone(nodes),
+        edges: structuredClone(edges),
+      }],
+      redoStack: [], // New change clears redo stack
+    });
+  },
+
+  undo: () => {
+    const { undoStack, redoStack } = get();
+    const snapshot = undoStack[undoStack.length - 1];
+    if (!snapshot) return;
+
+    // Grab current state to move to redo stack
+    const { nodes: currentNodes, edges: currentEdges, setGraph } = useWorkflowStore.getState();
+
+    const newRedoSnapshot = {
+      nodes: structuredClone(currentNodes),
+      edges: structuredClone(currentEdges),
+    };
+
+    set({
+      undoStack: undoStack.slice(0, -1),
+      redoStack: [...redoStack, newRedoSnapshot],
+      isRestoring: true,
+    });
+
+    // Apply the historic snapshot
+    setGraph(snapshot.nodes, snapshot.edges);
+
+    set({ isRestoring: false });
+  },
+
+  redo: () => {
+    const { undoStack, redoStack } = get();
+    const snapshot = redoStack[redoStack.length - 1];
+    if (!snapshot) return;
+
+    // Grab current state to move to undo stack
+    const { nodes: currentNodes, edges: currentEdges, setGraph } = useWorkflowStore.getState();
+
+    const newUndoSnapshot = {
+      nodes: structuredClone(currentNodes),
+      edges: structuredClone(currentEdges),
+    };
+
+    set({
+      undoStack: [...undoStack, newUndoSnapshot],
+      redoStack: redoStack.slice(0, -1),
+      isRestoring: true,
+    });
+
+    // Apply the next snapshot
+    setGraph(snapshot.nodes, snapshot.edges);
+
+    set({ isRestoring: false });
+  },
+
+  clear: () => {
+    set({ undoStack: [], redoStack: [], isRestoring: false });
+  },
+}));
+
+/* ------------------------------------------------------------------ */
+/* Public Hook */
 /* ------------------------------------------------------------------ */
 
 export function useUndoRedo() {
-  const {
-    nodes,
-    edges,
-    setGraph,
-  } = useWorkflowStore();
-
-  const undoStack = useRef<WorkflowSnapshot[]>([]);
-  const redoStack = useRef<WorkflowSnapshot[]>([]);
-  const isRestoring = useRef(false);
-
-  /* ------------------------------------------------------------------ */
-  /* Snapshot */
-  /* ------------------------------------------------------------------ */
-
-  const snapshot = useCallback(() => {
-    if (isRestoring.current) return;
-
-    undoStack.current.push({
-      nodes: structuredClone(nodes),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      edges: structuredClone(edges) as any[],
-    });
-
-    // Once a new action happens, redo history is invalid
-    redoStack.current = [];
-  }, [nodes, edges]);
-
-  /* ------------------------------------------------------------------ */
-  /* Undo */
-  /* ------------------------------------------------------------------ */
-
-  const undo = useCallback(() => {
-    const last = undoStack.current.pop();
-    if (!last) return;
-
-    redoStack.current.push({
-      nodes: structuredClone(nodes),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      edges: structuredClone(edges) as any[],
-    });
-
-    isRestoring.current = true;
-    setGraph(last.nodes as any[], last.edges);
-    isRestoring.current = false;
-  }, [nodes, edges, setGraph]);
-
-  /* ------------------------------------------------------------------ */
-  /* Redo */
-  /* ------------------------------------------------------------------ */
-
-  const redo = useCallback(() => {
-    const next = redoStack.current.pop();
-    if (!next) return;
-
-    undoStack.current.push({
-      nodes: structuredClone(nodes),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      edges: structuredClone(edges) as any[],
-    });
-
-    isRestoring.current = true;
-    setGraph(next.nodes as any[], next.edges);
-    isRestoring.current = false;
-  }, [nodes, edges, setGraph]);
-
-  /* ------------------------------------------------------------------ */
-  /* Auto snapshot on graph mutation */
-  /* ------------------------------------------------------------------ */
-
-  useEffect(() => {
-    snapshot();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges]);
-
-  /* ------------------------------------------------------------------ */
-  /* Public API */
-  /* ------------------------------------------------------------------ */
+  const undoStack = useHistoryStore((s) => s.undoStack);
+  const redoStack = useHistoryStore((s) => s.redoStack);
+  const undo = useHistoryStore((s) => s.undo);
+  const redo = useHistoryStore((s) => s.redo);
+  const pushSnapshot = useHistoryStore((s) => s.pushSnapshot);
 
   return {
     undo,
     redo,
-    canUndo: undoStack.current.length > 0,
-    canRedo: redoStack.current.length > 0,
+    pushSnapshot,
+    canUndo: undoStack.length > 0,
+    canRedo: redoStack.length > 0,
   };
 }
 
