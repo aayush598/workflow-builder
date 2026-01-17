@@ -1,0 +1,172 @@
+// ======================================
+// Prisma Client
+// ======================================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================
+// ENUMS
+// ======================================
+
+enum WorkflowRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  PARTIAL
+}
+
+enum WorkflowRunScope {
+  FULL
+  PARTIAL
+  SINGLE_NODE
+}
+
+enum NodeRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum NodeType {
+  TEXT
+  UPLOAD_IMAGE
+  UPLOAD_VIDEO
+  CROP_IMAGE
+  EXTRACT_FRAME
+  LLM
+}
+
+// ======================================
+// USER (CLERK-BASED)
+// ======================================
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String?
+  createdAt DateTime @default(now())
+
+  workflows Workflow[]
+  runs      WorkflowRun[]
+
+  @@index([clerkId])
+}
+
+// ======================================
+// WORKFLOW (METADATA ONLY)
+// ======================================
+
+model Workflow {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User              @relation(fields: [userId], references: [id])
+  versions WorkflowVersion[]
+  runs     WorkflowRun[]
+
+  @@index([userId])
+}
+
+// ======================================
+// WORKFLOW VERSION (IMMUTABLE SNAPSHOT)
+// ======================================
+
+model WorkflowVersion {
+  id          String   @id @default(cuid())
+  workflowId  String
+  version     Int
+  graph       Json     // Full DAG snapshot (nodes + edges)
+  createdAt   DateTime @default(now())
+
+  workflow Workflow @relation(fields: [workflowId], references: [id])
+  nodes    NodeSnapshot[]
+  runs     WorkflowRun[]
+
+  @@unique([workflowId, version])
+  @@index([workflowId])
+}
+
+// ======================================
+// NODE SNAPSHOT (STATIC GRAPH STATE)
+// ======================================
+
+model NodeSnapshot {
+  id                String   @id @default(cuid())
+  workflowVersionId String
+  nodeId            String   // React Flow node id
+  type              NodeType
+  config            Json     // Node configuration snapshot
+  position          Json     // { x, y }
+  createdAt         DateTime @default(now())
+
+  workflowVersion WorkflowVersion @relation(fields: [workflowVersionId], references: [id])
+  nodeRuns        NodeRun[]
+
+  @@index([workflowVersionId])
+  @@index([nodeId])
+}
+
+// ======================================
+// WORKFLOW RUN (EXECUTION ROOT)
+// ======================================
+
+model WorkflowRun {
+  id                String            @id @default(cuid())
+  workflowId        String
+  workflowVersionId String
+  userId            String
+  status            WorkflowRunStatus
+  scope             WorkflowRunScope
+  startedAt         DateTime          @default(now())
+  finishedAt        DateTime?
+  durationMs        Int?
+  error             String?
+
+  workflow        Workflow        @relation(fields: [workflowId], references: [id])
+  workflowVersion WorkflowVersion @relation(fields: [workflowVersionId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  nodeRuns        NodeRun[]
+
+  @@index([workflowId])
+  @@index([workflowVersionId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ======================================
+// NODE RUN (NODE-LEVEL EXECUTION)
+// ======================================
+
+model NodeRun {
+  id             String        @id @default(cuid())
+  workflowRunId  String
+  nodeSnapshotId String
+  nodeId         String
+  status         NodeRunStatus
+  inputs         Json?
+  outputs        Json?
+  error          String?
+  startedAt      DateTime      @default(now())
+  finishedAt     DateTime?
+  durationMs     Int?
+
+  workflowRun  WorkflowRun  @relation(fields: [workflowRunId], references: [id])
+  nodeSnapshot NodeSnapshot @relation(fields: [nodeSnapshotId], references: [id])
+
+  @@index([workflowRunId])
+  @@index([nodeSnapshotId])
+  @@index([nodeId])
+  @@index([status])
+}
