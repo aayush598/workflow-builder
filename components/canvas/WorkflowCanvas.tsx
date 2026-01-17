@@ -103,7 +103,7 @@ export default function WorkflowCanvas() {
   }, [pushSnapshot]);
 
   return (
-    <div className="h-screen w-screen bg-[#0A0A0A] overflow-hidden">
+    <div className="h-screen w-screen bg-[#0A0A0A] overflow-hidden" data-testid="workflow-canvas">
       {/* Chrome */}
       <LeftSidebar />
       <RightSidebar />

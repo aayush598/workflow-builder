@@ -1,0 +1,35 @@
+{
+    "nodes": [
+        {
+            "id": "node-text",
+            "type": "text",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "data": {
+                "value": "Hello world"
+            }
+        },
+        {
+            "id": "node-llm",
+            "type": "llm",
+            "position": {
+                "x": 400,
+                "y": 100
+            },
+            "data": {
+                "model": "gpt-4"
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge-1",
+            "source": "node-text",
+            "sourceHandle": "output",
+            "target": "node-llm",
+            "targetHandle": "user_message"
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+{
+    "nodes": [
+        {
+            "id": "node-1",
+            "type": "llm",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "data": {}
+        },
+        {
+            "id": "node-2",
+            "type": "llm",
+            "position": {
+                "x": 400,
+                "y": 100
+            },
+            "data": {}
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge-1",
+            "source": "node-1",
+            "sourceHandle": "output",
+            "target": "node-2",
+            "targetHandle": "user_message"
+        },
+        {
+            "id": "edge-2",
+            "source": "node-2",
+            "sourceHandle": "output",
+            "target": "node-1",
+            "targetHandle": "user_message"
+        }
+    ]
+}

@@ -1,0 +1,49 @@
+{
+    "nodes": [
+        {
+            "id": "text-1",
+            "type": "text",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "value": "Parallel"
+            }
+        },
+        {
+            "id": "llm-1",
+            "type": "llm",
+            "position": {
+                "x": 200,
+                "y": -50
+            },
+            "data": {}
+        },
+        {
+            "id": "llm-2",
+            "type": "llm",
+            "position": {
+                "x": 200,
+                "y": 50
+            },
+            "data": {}
+        }
+    ],
+    "edges": [
+        {
+            "id": "edge-1",
+            "source": "text-1",
+            "sourceHandle": "output",
+            "target": "llm-1",
+            "targetHandle": "user_message"
+        },
+        {
+            "id": "edge-2",
+            "source": "text-1",
+            "sourceHandle": "output",
+            "target": "llm-2",
+            "targetHandle": "user_message"
+        }
+    ]
+}
