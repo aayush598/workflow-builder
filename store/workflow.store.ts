@@ -73,8 +73,12 @@ export interface WorkflowState {
   clear: () => void;
 
   /* Persistence */
+  /* Persistence */
   saveWorkflow: (id: string) => Promise<void>;
   loadWorkflow: (id: string) => Promise<void>;
+
+  /* State */
+  isLoading: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -115,6 +119,9 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   editorMode: 'select',
   setEditorMode: (mode) => set({ editorMode: mode }),
+
+  /* State */
+  isLoading: false,
 
   /* -------------------------------------------------------------- */
   /* React Flow adapters */
@@ -338,6 +345,7 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   loadWorkflow: async (id) => {
     console.log(`📥 Loading workflow ${id}...`);
+    set({ isLoading: true });
     try {
       const res = await fetch(`/api/workflows/${id}`);
       if (!res.ok) throw new Error(`Failed to load workflow: ${res.status}`);
@@ -382,6 +390,8 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
       console.log('✅ Workflow loaded');
     } catch (error) {
       console.error('❌ Load failed:', error);
+    } finally {
+      set({ isLoading: false });
     }
   },
 }));

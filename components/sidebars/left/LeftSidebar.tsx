@@ -48,8 +48,12 @@ type SidebarMode =
 /* ------------------------------------------------------------------ */
 
 export default function LeftSidebar() {
-  const [activeMode, setActiveMode] = useState<SidebarMode>('quick');
+  const [activeMode, setActiveMode] = useState<SidebarMode | null>(null);
   const [showFileMenu, setShowFileMenu] = useState(false);
+
+  const toggleMode = (mode: SidebarMode) => {
+    setActiveMode((prev) => (prev === mode ? null : mode));
+  };
 
   return (
     <>
@@ -65,7 +69,7 @@ export default function LeftSidebar() {
             onClick={() => setShowFileMenu((v) => !v)}
             className="flex items-center gap-1 rounded-md px-2 py-1 hover:bg-white/10 transition"
           >
-            <Image src="https://app.weavy.ai/icons/logo.svg" alt="Logo" className="h-5 w-5" width={24} height={24}/>
+            <Image src="https://app.weavy.ai/icons/logo.svg" alt="Logo" className="h-5 w-5" width={24} height={24} />
             <ChevronDown className="h-3 w-3 text-white/70" />
           </button>
 
@@ -97,7 +101,7 @@ export default function LeftSidebar() {
         {/* ------------------------------------------------------------------ */}
         <SidebarNav
           active={activeMode}
-          onChange={setActiveMode}
+          onChange={toggleMode}
           items={[
             { id: 'search', icon: Search, label: 'Search' },
             { id: 'quick', icon: Grid, label: 'Quick access' },
@@ -137,17 +141,19 @@ export default function LeftSidebar() {
       {/* ------------------------------------------------------------------ */}
       {/* Node Catalog Panel */}
       {/* ------------------------------------------------------------------ */}
-      <aside
-        className="
-          fixed left-16 top-0 z-40
-          h-screen w-[260px]
-          border-r border-white/10
-          bg-[#1A1A1A]
-          flex flex-col
-        "
-      >
-        <NodeCatalog activeMode={activeMode} />
-      </aside>
+      {activeMode && (
+        <aside
+          className="
+            fixed left-16 top-0 z-40
+            h-screen w-[260px]
+            border-r border-white/10
+            bg-[#1A1A1A]
+            flex flex-col
+          "
+        >
+          <NodeCatalog activeMode={activeMode} />
+        </aside>
+      )}
 
     </>
   );

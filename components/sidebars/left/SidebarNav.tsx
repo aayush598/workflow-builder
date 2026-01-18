@@ -28,7 +28,7 @@ export interface SidebarNavItem<T extends string> {
 }
 
 export interface SidebarNavProps<T extends string> {
-  active: T;
+  active: T | null;
   items: SidebarNavItem<T>[];
   onChange: (id: T) => void;
 }
@@ -58,7 +58,7 @@ export default function SidebarNav<T extends string>({
             className={clsx(
               'group relative flex h-10 w-10 items-center justify-center rounded-lg transition',
               isActive
-                ? 'bg-white/10 text-white'
+                ? 'bg-white/10 text-yellow-400'
                 : 'text-white/50 hover:bg-white/5 hover:text-white'
             )}
           >

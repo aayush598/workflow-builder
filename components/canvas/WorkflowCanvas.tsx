@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import {
   ReactFlow,
   type Connection,
@@ -85,6 +86,7 @@ export default function WorkflowCanvas() {
     editorMode,
     loadWorkflow,
     saveWorkflow,
+    isLoading,
   } = useWorkflowStore();
 
   const params = useParams();
@@ -168,6 +170,15 @@ export default function WorkflowCanvas() {
         </ReactFlow>
 
         <BottomToolbar />
+
+        {isLoading && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0A0A0A]/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-muted-foreground font-medium animate-pulse">Loading workflow...</p>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

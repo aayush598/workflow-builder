@@ -56,7 +56,7 @@ export default function NodeCatalogSection({
       </div>
 
       {/* Items */}
-      <div className="grid grid-cols-1 gap-1 px-2">
+      <div className="grid grid-cols-2 gap-2 px-2">
         {children}
       </div>
     </section>
