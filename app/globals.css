@@ -58,10 +58,17 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', 'Geist Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   }
+}
+
+@utility scrollbar-stable {
+  scrollbar-gutter: stable;
 }
 
 /* React Flow Custom Styles */
