@@ -79,6 +79,7 @@ export interface WorkflowState {
 
   /* State */
   isLoading: boolean;
+  workflowName: string | null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -122,6 +123,7 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
   /* State */
   isLoading: false,
+  workflowName: null,
 
   /* -------------------------------------------------------------- */
   /* React Flow adapters */
@@ -374,6 +376,7 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
       // 3. Update store
       set({
+        workflowName: workflowData.name ?? 'Untitled Workflow',
         nodes: graph.nodes.map(toRFNode),
         edges: graph.edges.map((e) => ({
           id: e.id,

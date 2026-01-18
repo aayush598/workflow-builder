@@ -25,6 +25,8 @@ import {
 import NodeCatalogSection from './NodeCatalogSection';
 import DraggableNodeItem from './DraggableNodeItem';
 
+import useWorkflowStore from '@/store/workflow.store';
+
 /* ------------------------------------------------------------------ */
 /* Helpers */
 /* ------------------------------------------------------------------ */
@@ -73,9 +75,7 @@ interface NodeCatalogProps {
 export default function NodeCatalog({ activeMode }: NodeCatalogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // Reset search when closed? Optional.
-  // useEffect(() => { if (!activeMode) setSearchQuery(''); }, [activeMode]);
+  const { workflowName } = useWorkflowStore();
 
   /* ------------------------------------------------------------------ */
   /* Scroll handler */
@@ -114,11 +114,17 @@ export default function NodeCatalog({ activeMode }: NodeCatalogProps) {
     {} as Record<NodeCategory, NodeTypeDefinition[]>
   );
 
-
   return (
     <div className="flex h-full flex-col bg-[#1A1A1A]">
+      {/* Workflow Name Header */}
+      <div className="border-b border-white/10 px-4 py-3">
+        <h2 className="text-sm font-semibold text-white truncate" title={workflowName ?? 'Untitled Workflow'}>
+          {workflowName || 'Untitled Workflow'}
+        </h2>
+      </div>
+
       {/* Search Header */}
-      <div className="border-b border-white/10 p-4">
+      <div className="border-b border-white/10 p-4 pt-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
           <input
