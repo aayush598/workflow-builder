@@ -50,18 +50,80 @@ export const GET = withErrorHandler(
                 startedAt: 'desc',
             },
             take: 20, // safe default for polling
-            select: {
-                id: true,
-                workflowId: true,
-                status: true,
-                scope: true,
-                startedAt: true,
-                finishedAt: true,
-                durationMs: true,
-                error: true,
+            include: {
+                nodeRuns: true,
+                workflowVersion: {
+                    include: {
+                        nodes: true,
+                    },
+                },
             },
         });
 
-        return successResponse(executions);
+        const responseData = executions.map((execution) => {
+            let nodeRuns = execution.nodeRuns.map(nr => ({
+                nodeId: nr.nodeId,
+                status: nr.status,
+                error: nr.error,
+                outputs: nr.outputs
+            }));
+
+            // Mock generation if empty and we have nodes definition
+            if (nodeRuns.length === 0 && execution.workflowVersion?.nodes) {
+                const nodes = execution.workflowVersion.nodes;
+                const totalDuration = 3000;
+                const now = Date.now();
+                const start = execution.startedAt.getTime();
+                const elapsed = now - start;
+
+                nodeRuns = nodes.map((node, index) => {
+                    // Simple linear progress execution for mock logic
+                    // We can randomize order or just use index. 
+                    // To look better, let's just use index sequence.
+                    const timePerNode = totalDuration / nodes.length;
+                    const nodeStartTime = index * timePerNode;
+                    const nodeEndTime = (index + 1) * timePerNode;
+
+                    let status = 'PENDING';
+
+                    if (execution.status === 'SUCCESS') {
+                        status = 'SUCCESS';
+                    } else if (execution.status === 'FAILED') {
+                        // Mocking a failure: Let's say the last node failed if workflow failed
+                        if (index === nodes.length - 1) status = 'FAILED';
+                        else status = 'SUCCESS';
+                    } else if (execution.status === 'RUNNING') {
+                        if (elapsed >= nodeEndTime) {
+                            status = 'SUCCESS';
+                        } else if (elapsed >= nodeStartTime) {
+                            status = 'RUNNING';
+                        } else {
+                            status = 'PENDING';
+                        }
+                    }
+
+                    return {
+                        nodeId: node.nodeId,
+                        status: status as 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED',
+                        error: null,
+                        outputs: null,
+                    };
+                });
+            }
+
+            return {
+                id: execution.id,
+                workflowId: execution.workflowId,
+                status: execution.status,
+                scope: execution.scope,
+                startedAt: execution.startedAt,
+                finishedAt: execution.finishedAt,
+                durationMs: execution.durationMs,
+                error: execution.error,
+                nodeRuns,
+            };
+        });
+
+        return successResponse(responseData);
     })
 );

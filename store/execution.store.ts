@@ -8,6 +8,13 @@ export type BackendExecutionStatus =
   | 'SUCCESS'
   | 'FAILED';
 
+export interface BackendNodeRun {
+  nodeId: string;
+  status: 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED';
+  error?: string | null;
+  outputs?: unknown;
+}
+
 export interface BackendWorkflowRun {
   id: string;
   workflowId: string;
@@ -17,6 +24,7 @@ export interface BackendWorkflowRun {
   finishedAt?: string | null;
   durationMs?: number | null;
   error?: string | null;
+  nodeRuns?: BackendNodeRun[];
 }
 
 export type ExecutionStatus =
@@ -46,6 +54,7 @@ export interface ExecutionState {
 
   /* Queries */
   isNodeRunning: (nodeId: string) => boolean;
+  getNodeStatus: (nodeId: string) => ExecutionStatus | undefined;
   isWorkflowRunning: () => boolean;
 
   /* Workflow lifecycle */
@@ -83,6 +92,9 @@ const useExecutionStore = create<ExecutionState>((set, get) => ({
   /* Queries */
   isNodeRunning: (nodeId) =>
     get().nodeExecutions[nodeId]?.status === 'running',
+
+  getNodeStatus: (nodeId) =>
+    get().nodeExecutions[nodeId]?.status,
 
   isWorkflowRunning: () =>
     get().workflowRun?.status === 'running',
@@ -149,8 +161,55 @@ const useExecutionStore = create<ExecutionState>((set, get) => ({
     set((state) => {
       const activeRun = runs.find((r) => r.status === 'RUNNING');
 
+      // Map backend node runs to frontend node executions
+      let nodeExecutions = state.nodeExecutions;
+
+      // If there is an active run with nodeRuns, update the store
+      if (activeRun && activeRun.nodeRuns) {
+        const newNodeExecutions: Record<string, NodeExecutionState> = {};
+
+        activeRun.nodeRuns.forEach((nr) => {
+          let status: ExecutionStatus = 'idle';
+          if (nr.status === 'RUNNING') status = 'running';
+          if (nr.status === 'SUCCESS') status = 'success';
+          if (nr.status === 'FAILED') status = 'failed';
+
+          newNodeExecutions[nr.nodeId] = {
+            status,
+            output: nr.outputs,
+            error: nr.error,
+          };
+        });
+
+        // Merge with existing logic? 
+        // We probably want to overwrite fully if we trust the backend snapshot
+        nodeExecutions = newNodeExecutions;
+      }
+      // If we recently finished (no active run), we might want to keep the last state 
+      // OR look at the latest finished run? 
+      // For now, let's prioritize the RUNNING one. 
+      // If no running one, maybe we check the latest run if it matches our current view. 
+      // But typically syncFromBackend is called during polling. 
+
+      // If no active run but we have a workflowRun in state, check if it just finished
+      if (!activeRun && state.workflowRun) {
+        const finishedRun = runs.find(r => r.id === state.workflowRun?.runId);
+        if (finishedRun && finishedRun.nodeRuns) {
+          const finalNodeExecutions: Record<string, NodeExecutionState> = {};
+          finishedRun.nodeRuns.forEach((nr) => {
+            let status: ExecutionStatus = 'idle';
+            if (nr.status === 'RUNNING') status = 'running';
+            if (nr.status === 'SUCCESS') status = 'success';
+            if (nr.status === 'FAILED') status = 'failed';
+            finalNodeExecutions[nr.nodeId] = { status, output: nr.outputs, error: nr.error };
+          });
+          nodeExecutions = finalNodeExecutions;
+        }
+      }
+
       return {
         runs,
+        nodeExecutions,
         workflowRun: activeRun
           ? {
             runId: activeRun.id,

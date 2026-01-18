@@ -24,6 +24,8 @@ import type { PropsWithChildren, ReactNode } from 'react';
 /* Props */
 /* ------------------------------------------------------------------ */
 
+export type BaseNodeStatus = 'idle' | 'running' | 'success' | 'failed';
+
 export interface BaseNodeProps {
   /** Node display label (already resolved from domain layer) */
   title: string;
@@ -34,8 +36,8 @@ export interface BaseNodeProps {
   /** Whether this node is currently selected */
   selected?: boolean;
 
-  /** Whether this node is currently executing */
-  isRunning?: boolean;
+  /** Execution status of the node */
+  executionStatus?: BaseNodeStatus;
 
   /** Optional header slot (icon, menu button, etc.) */
   header?: ReactNode;
@@ -58,27 +60,33 @@ export default function BaseNode({
   title,
   accentColor,
   selected = false,
-  isRunning = false,
+  executionStatus = 'idle',
   header,
   footer,
   className,
   minWidth = 280,
   children,
 }: PropsWithChildren<BaseNodeProps>) {
+  const isRunning = executionStatus === 'running';
+  const isSuccess = executionStatus === 'success';
+  const isFailed = executionStatus === 'failed';
+
   return (
     <div
       className={clsx(
         'relative rounded-xl border bg-[#1A1A1A] text-white',
         'border-white/10',
-        'transition-shadow duration-200',
+        'transition-all duration-300', // Smooth transition for colors
         selected && 'ring-2',
-        isRunning && 'node-running',
+        isRunning && 'node-running border-blue-500/50',
+        isSuccess && 'border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]',
+        isFailed && 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]',
         className
       )}
       style={{
         minWidth,
-        // Selection ring color
-        ...(selected && {
+        // Selection ring color (only when not in a special execution state to avoid clash)
+        ...(selected && executionStatus === 'idle' && {
           boxShadow: `0 0 0 2px ${accentColor}`,
         }),
       }}
@@ -89,6 +97,9 @@ export default function BaseNode({
       {header && (
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           {header}
+          {/* Status Indicator Icon */}
+          {isSuccess && <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />}
+          {isFailed && <div className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />}
         </div>
       )}
 

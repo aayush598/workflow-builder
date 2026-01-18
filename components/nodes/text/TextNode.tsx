@@ -20,6 +20,7 @@ import NodeHandles from '@/components/nodes/base/NodeHandles';
 
 import { Textarea } from '@/components/ui/textarea';
 import useWorkflowStore from '@/store/workflow.store';
+import useExecutionStore from '@/store/execution.store'; // Added import
 
 import { NODE_TYPES } from '@/domain/nodes/node-types';
 import type { NodeTypeId } from '@/domain/nodes/node-types';
@@ -31,6 +32,7 @@ import type { NodeTypeId } from '@/domain/nodes/node-types';
 type TextNodeData = {
   label?: string;
   text?: string;
+  // ...
 };
 
 /* ------------------------------------------------------------------ */
@@ -48,6 +50,10 @@ export default function TextNode({
     (s) => s.updateNodeData
   );
 
+  const executionStatus = useExecutionStore(
+    (s) => s.getNodeStatus(id)
+  );
+
   const definition = NODE_TYPES['text'];
 
   return (
@@ -56,7 +62,7 @@ export default function TextNode({
         title={nodeData.label ?? definition.label}
         accentColor={definition.color}
         selected={selected}
-        isRunning={false}
+        executionStatus={executionStatus ?? 'idle'}
         header={
           <NodeHeader
             icon={<Type className="h-4 w-4" />}

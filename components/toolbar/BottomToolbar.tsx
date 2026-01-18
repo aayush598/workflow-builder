@@ -27,7 +27,7 @@ export default function BottomToolbar() {
   const zoom = Math.round(getZoom() * 100);
 
   const runWorkflow = useWorkflowExecution();
-  const executionStatus = useExecutionStore((s) => s.status);
+  const isRunning = useExecutionStore((s) => s.isWorkflowRunning());
 
 
   return (
@@ -55,7 +55,7 @@ export default function BottomToolbar() {
       <ToolbarButton
         icon={Play}
         onClick={runWorkflow}
-        disabled={executionStatus === 'running'}
+        disabled={isRunning}
       />
 
       <Divider />

@@ -65,9 +65,10 @@ export default function LLMNode({
     (s) => s.updateNodeData
   );
 
-  const isRunning = useExecutionStore(
-    (s) => s.isNodeRunning(id)
+  const executionStatus = useExecutionStore(
+    (s) => s.getNodeStatus(id)
   );
+  const isRunning = executionStatus === 'running';
 
   const executeNode = useNodeExecution(id);
 
@@ -94,7 +95,7 @@ export default function LLMNode({
         title={nodeData.label ?? definition.label}
         accentColor={definition.color}
         selected={selected}
-        isRunning={isRunning}
+        executionStatus={executionStatus ?? 'idle'}
         header={
           <NodeHeader
             icon={<Sparkles className="h-4 w-4" />}
