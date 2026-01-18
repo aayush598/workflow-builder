@@ -30,11 +30,11 @@ interface HistoryNodeItemProps {
 
 function statusColor(status: HistoryNodeResult['status']) {
   switch (status) {
-    case 'success':
+    case 'SUCCESS':
       return 'text-green-400';
-    case 'failed':
+    case 'FAILED':
       return 'text-red-400';
-    case 'running':
+    case 'RUNNING':
       return 'text-yellow-400';
     default:
       return 'text-white/60';
@@ -43,11 +43,11 @@ function statusColor(status: HistoryNodeResult['status']) {
 
 function statusSymbol(status: HistoryNodeResult['status']) {
   switch (status) {
-    case 'success':
+    case 'SUCCESS':
       return '✓';
-    case 'failed':
+    case 'FAILED':
       return '✗';
-    case 'running':
+    case 'RUNNING':
       return '•';
     default:
       return '';

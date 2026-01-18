@@ -34,16 +34,18 @@ interface HistoryRunItemProps {
 
 function statusBadge(status: WorkflowRun['status']) {
   switch (status) {
-    case 'success':
+    case 'SUCCESS':
       return 'bg-green-500/20 text-green-400';
-    case 'failed':
+    case 'FAILED':
       return 'bg-red-500/20 text-red-400';
-    case 'running':
+    case 'RUNNING':
       return 'bg-yellow-500/20 text-yellow-400';
     default:
       return 'bg-white/10 text-white/60';
   }
 }
+
+
 
 /* ------------------------------------------------------------------ */
 /* Component */
@@ -92,16 +94,16 @@ export default function HistoryRunItem({ run }: HistoryRunItemProps) {
 
           <div className="mt-1 flex items-center gap-1 text-[10px] text-white/40">
             <span>
-              {run.scope === 'full'
+              {run.scope === 'FULL'
                 ? 'Full Workflow'
-                : run.scope === 'single'
+                : run.scope === 'SINGLE_NODE'
                   ? 'Single Node'
                   : 'Partial'}
             </span>
-            {run.finishedAt && (
+            {run.durationMs !== undefined && (
               <>
                 <span>•</span>
-                <span>{run.finishedAt - run.startedAt}ms</span>
+                <span>{run.durationMs}ms</span>
               </>
             )}
           </div>

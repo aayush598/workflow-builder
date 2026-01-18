@@ -2,38 +2,36 @@
  * Workflow history store.
  *
  * Responsibilities:
- * - Track workflow runs (full, partial, single)
- * - Store node-level execution results
- * - Provide immutable execution history
- *
- * IMPORTANT:
- * - No UI logic
- * - No React Flow types
- * - No execution orchestration
+ * - Fetch and store workflow runs from backend
+ * - Manage loading and error states
+ * - Provide execution history to UI
  */
 
 import { create } from 'zustand';
-import { nanoid } from 'nanoid';
 
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
 
 export type RunScope =
-  | 'full'
-  | 'partial'
-  | 'single';
+  | 'FULL'
+  | 'PARTIAL'
+  | 'SINGLE_NODE';
 
 export type RunStatus =
-  | 'running'
-  | 'success'
-  | 'failed';
+  | 'PENDING'
+  | 'RUNNING'
+  | 'SUCCESS'
+  | 'FAILED';
 
 export interface HistoryNodeResult {
+  id: string; // valid database id
   nodeId: string;
   nodeType: string;
   label?: string;
   status: RunStatus;
+  startedAt: string; // ISO string
+  finishedAt?: string; // ISO string
   durationMs?: number;
   inputs?: unknown;
   output?: unknown;
@@ -42,10 +40,13 @@ export interface HistoryNodeResult {
 
 export interface WorkflowRun {
   id: string;
+  workflowId: string;
   scope: RunScope;
   status: RunStatus;
-  startedAt: number;
-  finishedAt?: number;
+  startedAt: string; // ISO string
+  finishedAt?: string; // ISO string
+  durationMs?: number;
+  error?: string | null;
   nodes: HistoryNodeResult[];
 }
 
@@ -55,85 +56,44 @@ export interface WorkflowRun {
 
 export interface HistoryState {
   runs: WorkflowRun[];
+  isLoading: boolean;
+  error: string | null;
 
-  /* Lifecycle */
-  startRun: (scope: RunScope) => string;
-  finishRun: (runId: string, status: RunStatus) => void;
-
-  /* Node-level updates */
-  recordNode: (
-    runId: string,
-    result: HistoryNodeResult
-  ) => void;
-
-  /* Utilities */
+  /* Actions */
+  fetchHistory: (workflowId: string) => Promise<void>;
   clear: () => void;
 }
 
 /* ------------------------------------------------------------------ */
 /* Store */
- /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
 
-const useHistoryStore = create<HistoryState>((set, get) => ({
+const useHistoryStore = create<HistoryState>((set) => ({
   runs: [],
+  isLoading: false,
+  error: null,
 
   /* -------------------------------------------------------------- */
-  /* Run lifecycle */
+  /* Actions */
   /* -------------------------------------------------------------- */
 
-  startRun: (scope) => {
-    const runId = nanoid();
+  fetchHistory: async (workflowId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await fetch(`/api/workflows/${workflowId}/history`);
+      if (!res.ok) throw new Error('Failed to fetch history');
 
-    set((state) => ({
-      runs: [
-        {
-          id: runId,
-          scope,
-          status: 'running',
-          startedAt: Date.now(),
-          nodes: [],
-        },
-        ...state.runs,
-      ],
-    }));
-
-    return runId;
+      const { data } = await res.json();
+      set({ runs: data });
+    } catch (err) {
+      console.error(err);
+      set({ error: (err as Error).message });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  finishRun: (runId, status) =>
-    set((state) => ({
-      runs: state.runs.map((run) =>
-        run.id === runId
-          ? {
-              ...run,
-              status,
-              finishedAt: Date.now(),
-            }
-          : run
-      ),
-    })),
-
-  /* -------------------------------------------------------------- */
-  /* Node-level results */
-  /* -------------------------------------------------------------- */
-
-  recordNode: (runId, result) =>
-    set((state) => ({
-      runs: state.runs.map((run) =>
-        run.id === runId
-          ? {
-              ...run,
-              nodes: [...run.nodes, result],
-            }
-          : run
-      ),
-    })),
-
-  /* -------------------------------------------------------------- */
-  /* Utilities */
-  /* -------------------------------------------------------------- */
-
-  clear: () => set({ runs: [] }),
+  clear: () => set({ runs: [], error: null }),
 }));
 
 export default useHistoryStore;

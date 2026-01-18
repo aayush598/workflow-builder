@@ -35,14 +35,16 @@ export const GET = withErrorHandler(
             },
             include: {
                 nodeRuns: {
-                    select: {
-                        id: true,
-                        nodeId: true,
-                        status: true,
-                        startedAt: true,
-                        finishedAt: true,
-                        durationMs: true,
-                        error: true,
+                    include: {
+                        nodeSnapshot: {
+                            select: {
+                                type: true,
+                                config: true,
+                            },
+                        },
+                    },
+                    orderBy: {
+                        startedAt: 'asc',
                     },
                 },
             },
@@ -57,7 +59,18 @@ export const GET = withErrorHandler(
                 finishedAt: run.finishedAt,
                 durationMs: run.durationMs,
                 error: run.error,
-                nodes: run.nodeRuns,
+                nodes: run.nodeRuns.map((nodeRun) => ({
+                    id: nodeRun.id,
+                    nodeId: nodeRun.nodeId,
+                    status: nodeRun.status,
+                    startedAt: nodeRun.startedAt,
+                    finishedAt: nodeRun.finishedAt,
+                    durationMs: nodeRun.durationMs,
+                    error: nodeRun.error,
+                    nodeType: nodeRun.nodeSnapshot.type,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    label: (nodeRun.nodeSnapshot.config as any)?.label,
+                })),
             }))
         );
     })
