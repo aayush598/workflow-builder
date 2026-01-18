@@ -1,17 +1,3 @@
-/**
- * Execution store.
- *
- * Responsibilities:
- * - Track running / completed node executions
- * - Track node-level status & results
- * - Coordinate execution lifecycle
- *
- * IMPORTANT:
- * - No UI components
- * - No React Flow types
- * - No domain DAG logic
- */
-
 import { create } from 'zustand';
 
 /* ------------------------------------------------------------------ */
@@ -22,28 +8,47 @@ export type ExecutionStatus =
   | 'idle'
   | 'running'
   | 'success'
-  | 'error';
+  | 'failed';
 
 export interface NodeExecutionState {
   status: ExecutionStatus;
-  startedAt?: number;
-  finishedAt?: number;
   output?: unknown;
   error?: unknown;
 }
 
 export interface ExecutionState {
-  /** Node id → execution state */
-  executions: Record<string, NodeExecutionState>;
+  /* Workflow run */
+  workflowRun?: {
+    runId: string;
+    workflowId: string;
+    status: ExecutionStatus;
+    startedAt: string;
+    scope: 'full' | 'single' | 'partial';
+  };
+
+  /* Node runs */
+  nodeExecutions: Record<string, NodeExecutionState>;
 
   /* Queries */
   isNodeRunning: (nodeId: string) => boolean;
+  isWorkflowRunning: () => boolean;
 
-  /* Lifecycle */
+  /* Workflow lifecycle */
+  startWorkflowRun: (payload: {
+    runId: string;
+    workflowId: string;
+    startedAt: string;
+    scope: 'full' | 'single' | 'partial';
+  }) => void;
+
+  finishWorkflowRun: (status: ExecutionStatus) => void;
+
+  /* Node lifecycle */
   startNode: (nodeId: string) => void;
   succeedNode: (nodeId: string, output?: unknown) => void;
   failNode: (nodeId: string, error: unknown) => void;
-  resetAll: () => void;
+
+  reset: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -51,34 +56,49 @@ export interface ExecutionState {
 /* ------------------------------------------------------------------ */
 
 const useExecutionStore = create<ExecutionState>((set, get) => ({
-  executions: {},
+  nodeExecutions: {},
 
+  /* Queries */
   isNodeRunning: (nodeId) =>
-    get().executions[nodeId]?.status === 'running',
+    get().nodeExecutions[nodeId]?.status === 'running',
 
-  /* -------------------------------------------------------------- */
-  /* Lifecycle */
-  /* -------------------------------------------------------------- */
+  isWorkflowRunning: () =>
+    get().workflowRun?.status === 'running',
 
+  /* Workflow lifecycle */
+  startWorkflowRun: ({ runId, workflowId, startedAt, scope }) =>
+    set({
+      workflowRun: {
+        runId,
+        workflowId,
+        startedAt,
+        status: 'running',
+        scope,
+      },
+    }),
+
+  finishWorkflowRun: (status) =>
+    set((state) => ({
+      workflowRun: state.workflowRun
+        ? { ...state.workflowRun, status }
+        : undefined,
+    })),
+
+  /* Node lifecycle */
   startNode: (nodeId) =>
     set((state) => ({
-      executions: {
-        ...state.executions,
-        [nodeId]: {
-          status: 'running',
-          startedAt: Date.now(),
-        },
+      nodeExecutions: {
+        ...state.nodeExecutions,
+        [nodeId]: { status: 'running' },
       },
     })),
 
   succeedNode: (nodeId, output) =>
     set((state) => ({
-      executions: {
-        ...state.executions,
+      nodeExecutions: {
+        ...state.nodeExecutions,
         [nodeId]: {
           status: 'success',
-          startedAt: state.executions[nodeId]?.startedAt,
-          finishedAt: Date.now(),
           output,
         },
       },
@@ -86,18 +106,20 @@ const useExecutionStore = create<ExecutionState>((set, get) => ({
 
   failNode: (nodeId, error) =>
     set((state) => ({
-      executions: {
-        ...state.executions,
+      nodeExecutions: {
+        ...state.nodeExecutions,
         [nodeId]: {
-          status: 'error',
-          startedAt: state.executions[nodeId]?.startedAt,
-          finishedAt: Date.now(),
+          status: 'failed',
           error,
         },
       },
     })),
 
-  resetAll: () => set({ executions: {} }),
+  reset: () =>
+    set({
+      workflowRun: undefined,
+      nodeExecutions: {},
+    }),
 }));
 
 export default useExecutionStore;

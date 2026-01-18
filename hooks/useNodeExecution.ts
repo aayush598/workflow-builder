@@ -1,76 +1,63 @@
 import { useCallback } from 'react';
+import { useParams } from 'next/navigation';
 
-import { executeWorkflow } from '@/domain/workflow/executor';
-import type { DomainNode } from '@/domain/nodes/node-factory';
-
-import useWorkflowStore from '@/store/workflow.store';
 import useExecutionStore from '@/store/execution.store';
-import useHistoryStore from '@/store/history.store';
 
 export function useNodeExecution(nodeId: string) {
-  const { nodes, edges } = useWorkflowStore();
+  const params = useParams();
+  const workflowId = params?.workflowId as string | undefined;
+
   const {
+    startWorkflowRun,
     startNode,
     succeedNode,
     failNode,
-    resetAll,
+    finishWorkflowRun,
   } = useExecutionStore();
-  const { startRun, recordNode, finishRun } = useHistoryStore();
 
   return useCallback(async () => {
-    const node = nodes.find((n) => n.id === nodeId);
-    if (!node) return;
+    if (!workflowId) return;
 
-    resetAll();
+    // 1. Start workflow run (SINGLE)
+    const res = await fetch(
+      `/api/workflows/${workflowId}/runs`,
+      {
+        method: 'POST',
+        credentials: 'include',
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error('Failed to start node run');
+    }
+
+    const json = await res.json();
+
+    startWorkflowRun({
+      runId: json.data.runId,
+      workflowId,
+      startedAt: json.data.startedAt,
+      scope: 'single',
+    });
+
+    // 2. Mock node execution
     startNode(nodeId);
 
-    const runId = startRun('single');
-    const startedAt = Date.now();
+    await new Promise((r) => setTimeout(r, 800));
 
-    try {
-      const result = await executeWorkflow({
-        nodes: [node as DomainNode],
-        edges: [],
-      });
+    const output = `Mock output for node ${nodeId}`;
 
-      const nodeResult = result.find(r => r.nodeId === nodeId);
-      const output = nodeResult?.output;
+    succeedNode(nodeId, output);
+    finishWorkflowRun('success');
 
-      succeedNode(nodeId, output);
-
-      recordNode(runId, {
-        nodeId,
-        nodeType: node.type ?? 'default',
-        status: 'success',
-        durationMs: Date.now() - startedAt,
-        output,
-      });
-
-      finishRun(runId, 'success');
-      return output;
-    } catch (err) {
-      failNode(nodeId, err);
-
-      recordNode(runId, {
-        nodeId,
-        nodeType: node.type ?? 'default',
-        status: 'failed',
-        error: err instanceof Error ? err.message : String(err),
-      });
-
-      finishRun(runId, 'failed');
-      throw err;
-    }
+    return output;
   }, [
     nodeId,
-    nodes,
-    edges,
-    resetAll,
+    workflowId,
+    startWorkflowRun,
     startNode,
     succeedNode,
+    finishWorkflowRun,
     failNode,
-    startRun,
-    recordNode,
-    finishRun,
   ]);
 }

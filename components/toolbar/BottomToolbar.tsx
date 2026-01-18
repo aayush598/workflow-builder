@@ -14,6 +14,10 @@ import useWorkflowStore from '@/store/workflow.store';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useState } from 'react';
 
+import { Play } from 'lucide-react';
+import { useWorkflowExecution } from '@/hooks/useWorkflowExecution';
+import useExecutionStore from '@/store/execution.store';
+
 export default function BottomToolbar() {
   const { zoomIn, zoomOut, fitView, getZoom, getViewport, setViewport } = useReactFlow();
   const { editorMode, setEditorMode } = useWorkflowStore();
@@ -21,6 +25,10 @@ export default function BottomToolbar() {
 
   const [open, setOpen] = useState(false);
   const zoom = Math.round(getZoom() * 100);
+
+  const runWorkflow = useWorkflowExecution();
+  const executionStatus = useExecutionStore((s) => s.status);
+
 
   return (
     <div className="fixed bottom-6 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-[#1A1A1A] px-4 py-2 shadow-2xl">
@@ -41,6 +49,14 @@ export default function BottomToolbar() {
       {/* Undo / Redo */}
       <ToolbarButton icon={Undo2} disabled={!canUndo} onClick={undo} />
       <ToolbarButton icon={Redo2} disabled={!canRedo} onClick={redo} />
+
+      <Divider />
+
+      <ToolbarButton
+        icon={Play}
+        onClick={runWorkflow}
+        disabled={executionStatus === 'running'}
+      />
 
       <Divider />
 
