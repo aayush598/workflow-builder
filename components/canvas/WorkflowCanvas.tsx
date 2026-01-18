@@ -42,6 +42,8 @@ import useWorkflowStore from '@/store/workflow.store';
 import { useDragNode } from '@/hooks/useDragNode';
 
 import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { useExecutionPolling } from '@/hooks/useExecutionPolling';
+
 
 
 /* ------------------------------------------------------------------ */
@@ -87,6 +89,8 @@ export default function WorkflowCanvas() {
 
   const params = useParams();
   const workflowId = params.workflowId as string;
+
+  useExecutionPolling();
 
   const { onDrop, onDragOver } = useDragNode();
   const { pushSnapshot } = useUndoRedo();

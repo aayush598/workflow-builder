@@ -3,6 +3,21 @@ import { create } from 'zustand';
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
+export type BackendExecutionStatus =
+  | 'RUNNING'
+  | 'SUCCESS'
+  | 'FAILED';
+
+export interface BackendWorkflowRun {
+  id: string;
+  workflowId: string;
+  status: BackendExecutionStatus;
+  scope: 'FULL' | 'SINGLE' | 'PARTIAL';
+  startedAt: string;
+  finishedAt?: string | null;
+  durationMs?: number | null;
+  error?: string | null;
+}
 
 export type ExecutionStatus =
   | 'idle'
@@ -47,6 +62,13 @@ export interface ExecutionState {
   startNode: (nodeId: string) => void;
   succeedNode: (nodeId: string, output?: unknown) => void;
   failNode: (nodeId: string, error: unknown) => void;
+
+  /* Backend-synced runs */
+  runs: BackendWorkflowRun[];
+
+  /* Sync */
+  syncFromBackend: (runs: BackendWorkflowRun[]) => void;
+
 
   reset: () => void;
 }
@@ -120,6 +142,41 @@ const useExecutionStore = create<ExecutionState>((set, get) => ({
       workflowRun: undefined,
       nodeExecutions: {},
     }),
+
+  runs: [],
+
+  syncFromBackend: (runs) =>
+    set((state) => {
+      const activeRun = runs.find((r) => r.status === 'RUNNING');
+
+      return {
+        runs,
+        workflowRun: activeRun
+          ? {
+            runId: activeRun.id,
+            workflowId: activeRun.workflowId,
+            status: 'running',
+            startedAt: activeRun.startedAt,
+            scope:
+              activeRun.scope === 'FULL'
+                ? 'full'
+                : activeRun.scope === 'SINGLE'
+                  ? 'single'
+                  : 'partial',
+          }
+          : state.workflowRun
+            ? {
+              ...state.workflowRun,
+              status:
+                runs.find((r) => r.id === state.workflowRun?.runId)
+                  ?.status === 'SUCCESS'
+                  ? 'success'
+                  : 'failed',
+            }
+            : undefined,
+      };
+    }),
+
 }));
 
 export default useExecutionStore;
