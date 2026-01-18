@@ -1,12 +1,16 @@
 'use client';
 
-import { ReactFlowProvider } from '@xyflow/react';
-import WorkflowCanvas from '@/components/canvas/WorkflowCanvas';
+import Link from 'next/link';
 
 export default function Home() {
   return (
-    <ReactFlowProvider>
-      <WorkflowCanvas />
-    </ReactFlowProvider>
+    <div className="h-screen flex items-center justify-center bg-black text-white">
+      <Link
+        href="/workflows"
+        className="px-6 py-3 rounded bg-white text-black"
+      >
+        Go to Workflows
+      </Link>
+    </div>
   );
 }
