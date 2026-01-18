@@ -21,7 +21,17 @@ export class WorkflowService {
     }
 
     async create(input: { userId: string; name: string; description?: string }) {
-        return workflowRepository.create(prisma, input);
+        return withTransaction(async (tx) => {
+            const workflow = await workflowRepository.create(tx, input);
+
+            await workflowVersionRepository.create(tx, {
+                workflowId: workflow.id,
+                version: 1,
+                graph: { nodes: [], edges: [] },
+            });
+
+            return workflow;
+        });
     }
 
     async getByIdForUser(id: string, userId: string) {
