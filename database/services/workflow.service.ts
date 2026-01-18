@@ -6,7 +6,7 @@ import { workflowVersionRepository } from "../repositories/workflow-version.repo
 import { nodeSnapshotRepository } from "../repositories/node-snapshot.repository";
 import { mapWorkflowToSnapshot, DomainWorkflowGraph } from "../mappers/workflow.mapper";
 import { mapNodeToSnapshot } from "../mappers/node.mapper";
-import { NodeType } from "@prisma/client";
+import { mapDomainNodeTypeToDb } from '../mappers/node-type.mapper';
 
 interface CreateWorkflowInput {
     userId: string;
@@ -81,7 +81,7 @@ export class WorkflowService {
                     mapNodeToSnapshot({
                         workflowVersionId: version.id,
                         nodeId: node.id,
-                        type: node.type,
+                        type: mapDomainNodeTypeToDb(node.type),
                         config: node.data,
                         position: node.position,
                     }),
@@ -121,7 +121,7 @@ export class WorkflowService {
                     mapNodeToSnapshot({
                         workflowVersionId: version.id,
                         nodeId: node.id,
-                        type: node.type,
+                        type: mapDomainNodeTypeToDb(node.type),
                         config: node.data,
                         position: node.position,
                     }),

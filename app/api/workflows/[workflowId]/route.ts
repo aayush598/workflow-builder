@@ -20,12 +20,15 @@ export const GET = withErrorHandler(
         const { userId } = await requireAuth();
         const params = await context.params;
 
-        const workflow = await workflowService.getByIdForUser(
-            params.workflowId,
-            userId
-        );
+        const [metadata, loaded] = await Promise.all([
+            workflowService.getByIdForUser(params.workflowId, userId),
+            workflowService.loadWorkflow(params.workflowId),
+        ]);
 
-        return successResponse(workflow);
+        return successResponse({
+            ...metadata,
+            graph: loaded?.graph ?? { nodes: [], edges: [] },
+        });
     })
 );
 
@@ -36,6 +39,10 @@ const updateWorkflowSchema = z.object({
     name: z.string().min(1).optional(),
     description: z.string().optional(),
     isArchived: z.boolean().optional(),
+    graph: z.object({
+        nodes: z.array(z.any()),
+        edges: z.array(z.any()),
+    }).optional(),
 });
 
 export const PATCH = withErrorHandler(
@@ -44,10 +51,16 @@ export const PATCH = withErrorHandler(
             const { userId } = await requireAuth();
             const params = await context.params;
 
+            const { graph, ...meta } = body;
+
+            if (graph) {
+                await workflowService.saveNewVersion(params.workflowId, graph);
+            }
+
             const workflow = await workflowService.updateForUser(
                 params.workflowId,
                 userId,
-                body
+                meta
             );
 
             return successResponse(workflow);

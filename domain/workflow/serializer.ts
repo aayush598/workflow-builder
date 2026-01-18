@@ -42,9 +42,9 @@ export interface SerializedNode {
 export interface SerializedEdge {
   id: string;
   source: string;
-  sourceHandle: string;
+  sourceHandle: string | null;
   target: string;
-  targetHandle: string;
+  targetHandle: string | null;
 }
 
 /* ------------------------------------------------------------------ */

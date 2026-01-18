@@ -215,9 +215,10 @@ export function isCompatibleConnection(
  */
 export function getNodePort(
   nodeType: NodeTypeId,
-  portId: string,
+  portId: string | null,
   direction: 'input' | 'output'
 ): NodePort | undefined {
+  if (!portId) return undefined;
   const ports = NODE_PORTS[nodeType];
   const list = direction === 'input' ? ports.inputs : ports.outputs;
   return list.find((p) => p.id === portId);
@@ -228,8 +229,9 @@ export function getNodePort(
  */
 export function allowsMultipleConnections(
   nodeType: NodeTypeId,
-  portId: string
+  portId: string | null
 ): boolean {
+  if (!portId) return false;
   const port = getNodePort(nodeType, portId, 'input');
   return Boolean(port?.multiple);
 }

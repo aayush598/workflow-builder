@@ -36,6 +36,11 @@ import {
   allowsMultipleConnections,
 } from '@/domain/nodes/node-ports';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
+import {
+  serializeWorkflow,
+  deserializeWorkflow,
+  type SerializedWorkflow,
+} from '@/domain/workflow/serializer';
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -66,6 +71,10 @@ export interface WorkflowState {
   /* Graph actions */
   setGraph: (nodes: Node[], edges: Edge[]) => void;
   clear: () => void;
+
+  /* Persistence */
+  saveWorkflow: (id: string) => Promise<void>;
+  loadWorkflow: (id: string) => Promise<void>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -198,9 +207,9 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const newEdge: Edge = {
       id: `${connection.source}-${connection.sourceHandle}-${connection.target}-${connection.targetHandle}`,
       source: connection.source,
-      sourceHandle: connection.sourceHandle,
+      sourceHandle: connection.sourceHandle ?? undefined,
       target: connection.target,
-      targetHandle: connection.targetHandle,
+      targetHandle: connection.targetHandle ?? undefined,
     };
 
     console.log('✨ Creating edge:', newEdge);
@@ -210,16 +219,16 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
       ...edges.map((e) => ({
         id: e.id,
         source: e.source,
-        sourceHandle: e.sourceHandle!,
+        sourceHandle: e.sourceHandle ?? null,
         target: e.target,
-        targetHandle: e.targetHandle!,
+        targetHandle: e.targetHandle ?? null,
       })),
       {
         id: newEdge.id,
         source: newEdge.source,
-        sourceHandle: newEdge.sourceHandle!,
+        sourceHandle: newEdge.sourceHandle ?? null,
         target: newEdge.target,
-        targetHandle: newEdge.targetHandle!,
+        targetHandle: newEdge.targetHandle ?? null,
       },
     ];
 
@@ -273,9 +282,108 @@ const useWorkflowStore = create<WorkflowState>((set, get) => ({
   /* Graph actions */
   /* -------------------------------------------------------------- */
 
-  setGraph: (nodes, edges) => set({ nodes, edges }),
+  setGraph: (nodes: Node[], edges: Edge[]) => set({ nodes, edges }),
 
   clear: () => set({ nodes: [], edges: [] }),
+
+  /* -------------------------------------------------------------- */
+  /* Persistence */
+  /* -------------------------------------------------------------- */
+
+  saveWorkflow: async (id) => {
+    console.log(`💾 Saving workflow ${id}...`);
+    const { nodes, edges } = get();
+
+    // 1. Convert to domain objects
+    const domainNodes = nodes.map(toDomainNode);
+    const domainEdges = edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      sourceHandle: e.sourceHandle ?? null,
+      target: e.target,
+      targetHandle: e.targetHandle ?? null,
+    }));
+
+    console.log(`📦 Payload: ${domainNodes.length} nodes, ${domainEdges.length} edges`);
+
+    // 2. Serialize (reuse domain logic)
+    // We use the serializer to ensure consistent structure, then parse back
+    // because our API expects an object, not a string.
+    const json = serializeWorkflow({ nodes: domainNodes, edges: domainEdges });
+    const payload = JSON.parse(json) as SerializedWorkflow;
+
+    // 3. Send to API
+    try {
+      const res = await fetch(`/api/workflows/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          graph: {
+            nodes: payload.nodes,
+            edges: payload.edges,
+          }
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to save workflow: ${res.status} ${errorText}`);
+      }
+
+      console.log('✅ Workflow saved successfully');
+    } catch (error) {
+      console.error('❌ Save failed:', error);
+    }
+  },
+
+  loadWorkflow: async (id) => {
+    console.log(`📥 Loading workflow ${id}...`);
+    try {
+      const res = await fetch(`/api/workflows/${id}`);
+      if (!res.ok) throw new Error(`Failed to load workflow: ${res.status}`);
+
+      const json = await res.json();
+      console.log('📦 API Response:', json);
+
+      const workflowData = json.data;
+
+      if (!workflowData?.graph) {
+        console.warn('⚠️ No graph data found in workflow response');
+        return;
+      }
+
+      // 1. Reconstruct serialized format
+      // We assume version 1 for now as we don't store it on the workflow root
+      // In a real app, `data.version` might come from the API
+      const serialized: SerializedWorkflow = {
+        version: 1,
+        nodes: workflowData.graph.nodes ?? [], // Default to empty if missing
+        edges: workflowData.graph.edges ?? [],
+      };
+
+      // 2. Deserialize (validates & rehydrates types)
+      const graph = deserializeWorkflow(JSON.stringify(serialized));
+
+      // 3. Update store
+      set({
+        nodes: graph.nodes.map(toRFNode),
+        edges: graph.edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          sourceHandle: e.sourceHandle ?? undefined,
+          target: e.target,
+          targetHandle: e.targetHandle ?? undefined,
+          animated: true, // Restore default UI props
+        })),
+        // Reset history on load?
+        // Maybe not necessary if undo/redo handles it naturally or if we want to clear it.
+      });
+
+      console.log('✅ Workflow loaded');
+    } catch (error) {
+      console.error('❌ Load failed:', error);
+    }
+  },
 }));
 
 export default useWorkflowStore;

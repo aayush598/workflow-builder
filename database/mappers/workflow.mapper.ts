@@ -1,8 +1,8 @@
-import { NodeType } from "@prisma/client";
+import { NodeTypeId } from "@/domain/nodes/node-types";
 
 export interface DomainNode {
     id: string;
-    type: NodeType;
+    type: NodeTypeId;
     data: Record<string, unknown>;
     position: { x: number; y: number };
 }
@@ -10,9 +10,9 @@ export interface DomainNode {
 export interface DomainEdge {
     id: string;
     source: string;
-    sourceHandle?: string;
+    sourceHandle?: string | null;
     target: string;
-    targetHandle?: string;
+    targetHandle?: string | null;
 }
 
 export interface DomainWorkflowGraph {
@@ -42,9 +42,9 @@ export function mapWorkflowToSnapshot(
             edges: graph.edges.map((edge) => ({
                 id: edge.id,
                 source: edge.source,
-                sourceHandle: edge.sourceHandle,
+                sourceHandle: edge.sourceHandle ?? null,
                 target: edge.target,
-                targetHandle: edge.targetHandle,
+                targetHandle: edge.targetHandle ?? null,
             })),
         },
     };

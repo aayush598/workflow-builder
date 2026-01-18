@@ -13,7 +13,8 @@
  * - No execution logic
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import {
   ReactFlow,
   type Connection,
@@ -41,7 +42,7 @@ import useWorkflowStore from '@/store/workflow.store';
 import { useDragNode } from '@/hooks/useDragNode';
 
 import { useUndoRedo } from '@/hooks/useUndoRedo';
-import { useEffect } from 'react';
+
 
 /* ------------------------------------------------------------------ */
 /* Edge defaults */
@@ -80,7 +81,12 @@ export default function WorkflowCanvas() {
     onEdgesChange,
     onConnect,
     editorMode,
+    loadWorkflow,
+    saveWorkflow,
   } = useWorkflowStore();
+
+  const params = useParams();
+  const workflowId = params.workflowId as string;
 
   const { onDrop, onDragOver } = useDragNode();
   const { pushSnapshot } = useUndoRedo();
@@ -101,6 +107,28 @@ export default function WorkflowCanvas() {
       beforeGraphChange: pushSnapshot,
     });
   }, [pushSnapshot]);
+
+  // Load workflow on mount
+  useEffect(() => {
+    if (workflowId) {
+      loadWorkflow(workflowId);
+    }
+  }, [workflowId, loadWorkflow]);
+
+  // Save shortcut (Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (workflowId) {
+          saveWorkflow(workflowId);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [workflowId, saveWorkflow]);
 
   return (
     <div className="h-screen w-screen bg-[#0A0A0A] overflow-hidden" data-testid="workflow-canvas">

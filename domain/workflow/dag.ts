@@ -28,9 +28,9 @@ import {
 export interface WorkflowEdge {
   id: string;
   source: string;
-  sourceHandle: string;
+  sourceHandle: string | null;
   target: string;
-  targetHandle: string;
+  targetHandle: string | null;
 }
 
 export interface WorkflowGraph {
