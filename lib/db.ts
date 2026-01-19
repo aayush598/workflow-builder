@@ -69,12 +69,16 @@ export async function withRetry<T>(
 /**
  * Transaction + retry combo.
  * This is what you will use most often in execution services.
+ * Uses default isolation (ReadCommitted) for better performance and less locking.
  */
 export async function withSafeTransaction<T>(
     fn: (tx: Prisma.TransactionClient) => Promise<T>,
 ): Promise<T> {
     return withRetry(() =>
-        withSerializableTransaction(async (tx) => fn(tx)),
+        prisma.$transaction(async (tx) => fn(tx), {
+            maxWait: 5000, // Wait longer for a connection
+            timeout: 10000, // Allow transaction to take longer
+        })
     );
 }
 

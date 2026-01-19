@@ -81,64 +81,26 @@ export async function executeWorkflow(
     ? new Set(options.nodes)
     : null;
 
-  const results = new Map<string, ExecutionResult>();
-  const outputStore = new Map<string, unknown>();
+  const results: ExecutionResult[] = [];
 
   for (const nodeId of executionOrder) {
-    if (allowedNodes && !allowedNodes.has(nodeId)) {
-      continue;
-    }
+    if (allowedNodes && !allowedNodes.has(nodeId)) continue;
 
     const node = nodeMap.get(nodeId);
     if (!node) continue;
 
-    const context = buildExecutionContext(
-      node,
-      graph.edges,
-      outputStore,
-      nodeMap
-    );
-
-    const start = performance.now();
-
-    try {
-      // NOTE: Execution is mocked here
-      const output = await mockExecuteNode(
-        node.type,
-        context
-      );
-
-      const durationMs = performance.now() - start;
-
-      const result: ExecutionResult = {
-        nodeId,
-        status: 'success',
-        output,
-        durationMs,
-      };
-
-      results.set(nodeId, result);
-      outputStore.set(nodeId, output);
-    } catch (err) {
-      const durationMs = performance.now() - start;
-
-      const result: ExecutionResult = {
-        nodeId,
-        status: 'failed',
-        error:
-          err instanceof Error
-            ? err.message
-            : 'Unknown error',
-        durationMs,
-      };
-
-      results.set(nodeId, result);
-      break; // Stop execution on failure
-    }
+    // ❗ Phase 2: executor NO LONGER runs logic
+    // Execution is handled by Trigger.dev only
+    results.push({
+      nodeId,
+      status: "success",
+      durationMs: 0,
+    });
   }
 
-  return Array.from(results.values());
+  return results;
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Input Aggregation */
@@ -179,52 +141,6 @@ function buildExecutionContext(
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Mock Execution */
-/* ------------------------------------------------------------------ */
-
-/**
- * Mock node execution.
- * This will be replaced by service adapters later.
- */
-async function mockExecuteNode(
-  nodeType: NodeTypeId,
-  context: ExecutionContext
-): Promise<unknown> {
-  // Artificial delay for realism
-  await delay(200 + Math.random() * 300);
-
-  switch (nodeType) {
-    case 'text':
-      return context.inputs['output'] ?? null;
-
-    case 'upload-image':
-      return {
-        url: 'https://mock.cdn/image.png',
-      };
-
-    case 'upload-video':
-      return {
-        url: 'https://mock.cdn/video.mp4',
-      };
-
-    case 'crop-image':
-      return {
-        url: 'https://mock.cdn/cropped-image.png',
-      };
-
-    case 'extract-frame':
-      return {
-        url: 'https://mock.cdn/frame.png',
-      };
-
-    case 'llm':
-      return 'Mock LLM response';
-
-    default:
-      throw new Error(`Unhandled node type: ${nodeType}`);
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /* Utilities */

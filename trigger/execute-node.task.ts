@@ -1,12 +1,13 @@
-import { task, logger, wait } from "@trigger.dev/sdk/v3";
+import { task, logger } from "@trigger.dev/sdk/v3";
 import { prisma } from "@/lib/prisma";
+import { NodeType, Prisma } from "@prisma/client";
 
 /**
- * Core node execution task
+ * Phase 2: Real Text Node execution
  *
- * Phase 1:
- * - No real node logic yet
- * - Just lifecycle + DB updates
+ * - Text nodes emit real text
+ * - No mocks
+ * - Output is persisted
  */
 export const executeNodeTask = task({
     id: "execute-node",
@@ -21,25 +22,42 @@ export const executeNodeTask = task({
 
         logger.log("Executing node", { workflowRunId, nodeId });
 
-        // Simulate execution delay (Phase 1 only)
-        await wait.for({ seconds: 0.8 });
-
-        // Mark node as SUCCESS
-        await prisma.nodeRun.updateMany({
-            where: {
-                workflowRunId,
-                nodeId,
-            },
-            data: {
-                status: "SUCCESS",
-                finishedAt: new Date(),
-                outputs: {
-                    result: `Mock execution result for node ${nodeId}`,
-                },
+        // 1. Load NodeRun with snapshot
+        const nodeRun = await prisma.nodeRun.findFirst({
+            where: { workflowRunId, nodeId },
+            include: {
+                nodeSnapshot: true,
             },
         });
 
-        // Check if this is the last running node
+        if (!nodeRun || !nodeRun.nodeSnapshot) {
+            throw new Error("Node snapshot not found");
+        }
+
+        const { type, config } = nodeRun.nodeSnapshot;
+
+        let output: unknown = null;
+
+        // 2. TEXT NODE: emit real text
+        // Prisma ENUM is uppercase
+        if (type === NodeType.TEXT) {
+            const textConfig = config as { text?: string } | null;
+            output = textConfig?.text ?? "";
+        }
+
+        // (Other node types will be added in next phases)
+
+        // 3. Persist output
+        await prisma.nodeRun.update({
+            where: { id: nodeRun.id },
+            data: {
+                status: "SUCCESS",
+                finishedAt: new Date(),
+                outputs: output as Prisma.InputJsonValue,
+            },
+        });
+
+        // 4. Close workflow if last node
         const remaining = await prisma.nodeRun.count({
             where: {
                 workflowRunId,
@@ -57,10 +75,12 @@ export const executeNodeTask = task({
             });
         }
 
-        logger.log("Node execution finished", { workflowRunId, nodeId });
+        logger.log("Node execution finished", {
+            workflowRunId,
+            nodeId,
+            output,
+        });
 
-        return {
-            status: "SUCCESS",
-        };
+        return { status: "SUCCESS" };
     },
 });
