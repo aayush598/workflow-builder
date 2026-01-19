@@ -25,6 +25,7 @@ import useExecutionStore from '@/store/execution.store'; // Added import
 
 import { NODE_TYPES } from '@/domain/nodes/node-types';
 import type { NodeTypeId } from '@/domain/nodes/node-types';
+import { uploadWithTransloadit } from "@/services/media.service";
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -61,16 +62,34 @@ export default function UploadVideoNode({
   /* Mock upload (replace with Transloadit later) */
   /* ------------------------------------------------------------------ */
 
-  const handleUpload = () => {
-    // Mock async upload
-    setTimeout(() => {
-      updateNodeData(id, {
-        videoUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        fileName: 'demo-video.mp4',
-      });
-    }, 1000);
+  const handleUpload = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "video/mp4,video/webm,video/mov,video/m4v";
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      try {
+        const result = await uploadWithTransloadit(
+          file,
+          process.env.NEXT_PUBLIC_TRANSLOADIT_TEMPLATE_VIDEO!
+        );
+
+        updateNodeData(id, {
+          videoUrl: result.url,
+          fileName: result.fileName,
+        });
+      } catch (err) {
+        console.error("Video upload failed", err);
+        alert("Video upload failed");
+      }
+    };
+
+    input.click();
   };
+
 
   return (
     <>

@@ -25,6 +25,7 @@ import useExecutionStore from '@/store/execution.store'; // Added import
 
 import { NODE_TYPES } from '@/domain/nodes/node-types';
 import type { NodeTypeId } from '@/domain/nodes/node-types';
+import { uploadWithTransloadit } from "@/services/media.service";
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -62,15 +63,37 @@ export default function UploadImageNode({
   /* ------------------------------------------------------------------ */
 
   const handleUpload = () => {
-    // Mock async upload
-    setTimeout(() => {
-      updateNodeData(id, {
-        imageUrl:
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=600&fit=crop',
-        fileName: 'product-image.jpg',
-      });
-    }, 800);
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = async () => {
+      if (!input.files?.[0]) return;
+
+      try {
+        const file = input.files[0];
+
+        const { url, fileName } =
+          await uploadWithTransloadit(
+            file,
+            process.env
+              .NEXT_PUBLIC_TRANSLOADIT_TEMPLATE_IMAGE!
+          );
+
+        updateNodeData(id, {
+          imageUrl: url,
+          fileName,
+        });
+      } catch (err) {
+        console.error("Image upload failed", err);
+        alert("Image upload failed");
+      }
+    };
+
+    input.click();
   };
+
+
 
   return (
     <>
