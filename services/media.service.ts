@@ -1,20 +1,29 @@
 export async function uploadWithTransloadit(
     file: File,
-    templateId: string
+    templateId?: string
 ): Promise<{ url: string; fileName: string }> {
     const formData = new FormData();
 
     formData.append("file", file);
 
-    formData.append(
-        "params",
-        JSON.stringify({
-            auth: {
-                key: process.env.NEXT_PUBLIC_TRANSLOADIT_KEY,
+    const params: any = {
+        auth: {
+            key: process.env.NEXT_PUBLIC_TRANSLOADIT_KEY,
+        },
+    };
+
+    if (templateId) {
+        params.template_id = templateId;
+    } else {
+        // Fallback to simple upload if no template is provided
+        params.steps = {
+            ":original": {
+                robot: "/upload/handle",
             },
-            template_id: templateId,
-        })
-    );
+        };
+    }
+
+    formData.append("params", JSON.stringify(params));
 
     const response = await fetch(
         "https://api2.transloadit.com/assemblies",

@@ -74,7 +74,7 @@ export default function UploadVideoNode({
       try {
         const result = await uploadWithTransloadit(
           file,
-          process.env.NEXT_PUBLIC_TRANSLOADIT_TEMPLATE_VIDEO!
+          process.env.NEXT_PUBLIC_TRANSLOADIT_TEMPLATE_VIDEO
         );
 
         updateNodeData(id, {
