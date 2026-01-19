@@ -10,17 +10,14 @@ export function useNodeExecution(nodeId: string) {
   const {
     startWorkflowRun,
     startNode,
-    succeedNode,
-    failNode,
-    finishWorkflowRun,
   } = useExecutionStore();
 
   return useCallback(async () => {
     if (!workflowId) return;
 
-    // 1. Start workflow run (SINGLE)
+    // Call backend execution API
     const res = await fetch(
-      `/api/workflows/${workflowId}/runs`,
+      `/api/workflows/${workflowId}/nodes/${nodeId}/execute`,
       {
         method: 'POST',
         credentials: 'include',
@@ -28,11 +25,12 @@ export function useNodeExecution(nodeId: string) {
     );
 
     if (!res.ok) {
-      throw new Error('Failed to start node run');
+      throw new Error('Failed to execute node');
     }
 
     const json = await res.json();
 
+    // Start workflow run in UI
     startWorkflowRun({
       runId: json.data.runId,
       workflowId,
@@ -40,24 +38,15 @@ export function useNodeExecution(nodeId: string) {
       scope: 'single',
     });
 
-    // 2. Mock node execution
+    // Start node in UI
     startNode(nodeId);
 
-    await new Promise((r) => setTimeout(r, 800));
-
-    const output = `Mock output for node ${nodeId}`;
-
-    succeedNode(nodeId, output);
-    finishWorkflowRun('success');
-
-    return output;
+    // Output will arrive via polling → syncFromBackend
+    return null;
   }, [
     nodeId,
     workflowId,
     startWorkflowRun,
     startNode,
-    succeedNode,
-    finishWorkflowRun,
-    failNode,
   ]);
 }

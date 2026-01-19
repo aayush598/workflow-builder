@@ -1,6 +1,6 @@
-import { prisma } from '@/lib/prisma';
+import { PrismaClient, Prisma } from '@prisma/client';
 
-type DbClient = typeof prisma;
+type DbClient = PrismaClient | Prisma.TransactionClient;
 
 export class UserRepository {
   async upsertByClerkId(
